@@ -21,17 +21,22 @@ General Usage
 
 In order to run the algorithm, prepare a dataset in :code:`pandas` :code:`dataframe` format with respondents as rows and variables as columns.
 Keep this file in the same directory as the :code:`GA_HW` Python script you are running. When using categorical variables, dummy encoding is highly advised. For instance:
+
 .. code:: bash
+
     db = pd.get_dummies(db0, drop_first=True)
 
 .. code:: bash
+
     results = GA_HW.opt(db, variable_names, dep_variable, n, N=250, max_gen=10, cr_prob=0.6, fit_fun='auc', thr_search=False)
 
 The four main arguments of the algorithm are:
 
 - db: :code:`pandas` dataframe with respondents as rows and variables as columns
 - variable_names: :code:`list` of :code:`string` names of all independent variables (predictors, questions). Names must coincide with the column names of variables in the dataframe. Example, original interview with 10 questions:
+
 .. code:: bash
+
     variable_names = ['Q1', 'Q2, 'Q3', 'Q4', 'Q5', 'Q6', 'Q7', 'Q8', 'Q9', 'Q10']
 
 - dep_variable: :code:`string` name of the dependent variable. Must coincide with a column name among variables in the dataframe.
