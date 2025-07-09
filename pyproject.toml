@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "GA_HW"
+version = "0.0.1"
+authors = [
+  { name="Jorge Piqueras-Marqués", email="floydpik@gmail.com"},
+]
+readme = "README.md"
+requires-python = ">=3.0"
+
+[project.urls]
+Homepage = "https://github.com/JorgePiquerasMarques"
+Orcid = "https://orcid.org/0000-0002-6812-2106"
