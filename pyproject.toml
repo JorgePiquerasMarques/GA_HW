@@ -8,7 +8,7 @@ version = "0.0.1"
 authors = [
   { name="Jorge Piqueras-Marqués", email="floydpik@gmail.com"},
 ]
-readme = "README.md"
+readme = "README.rst"
 requires-python = ">=3.0"
 
 [project.urls]
