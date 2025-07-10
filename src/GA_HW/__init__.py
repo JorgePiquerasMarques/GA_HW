@@ -22,12 +22,13 @@ results = GA_HW.opt(db, variable_names, dep_variable, n, N, max_gen, cr_prob, fi
         thr_search: Boolean. Whether to perform a grid search for the optimal classification threshold (True) or not (False)
 
     outputs:
-        results: list with the following elements:
-            0: list of the fitness values of the fittests individuals on each generation
-            1: list of the mean fitness of each generation.
-            2: names of variables included in the solution
-            3: optimal classification threshold of the DT model
-            4: fittest individual (individual class)
+        results: object with the following attributes
+            fitness_list: list of the fitness values of the fittests individuals on each generation
+            mean_fitness_list: list of the mean fitness of each generation.
+            names: names of variables included in the solution
+            threshold: optimal classification threshold of the DT model
+            fitness: fitness of the optimal solution
+            fitness_sem: sem of the fitness of the optimal solution
 '''
 
 import numpy as np
@@ -42,11 +43,24 @@ class individual:
     ''' 
         This is a class to store the individuals' genes and fitness/thr
     '''
-    def __init__(self, chrom, fitness, threshold):
+    def __init__(self, chrom, fitness, fitness_sem, threshold):
         self.chrom = chrom
         self.fitness = fitness
+        self.fitness_sem = fitness_sem
         self.threshold = threshold
         
+class result:
+    '''
+        This is a class to store the final results of the model
+    '''
+    def __init__(self, fitness_list, mean_fitness_list, names, fitness, fitness_sem, threshold):
+        self.fitness_list = fitness_list
+        self.mean_fitness_list = mean_fitness_list
+        self.names = names
+        self.fitness = fitness
+        self.fitness_sem = fitness_sem
+        self.threshold = threshold
+                
 def Kfoldsets(db):
     '''
         This function takes the original database does the split into 10 subsets of equal size. 
@@ -108,6 +122,7 @@ def Kfold_DT(dep_variable, X_sets, variables, f):
             
         # Calculate the fitness value as the mean of the k-estimates
         result = np.mean(metrics)
+        result_sem = scipy.stats.sem(metrics)
         best_thr = 0 # thr is set to an arbitrary number
     else:
         # If F2 or MCC are the fitness functions, a search for the optimal threshold is performed
@@ -156,13 +171,15 @@ def Kfold_DT(dep_variable, X_sets, variables, f):
             # Check if the fitness obtained for thr is the best yet
             if (thr_metric>=best_thr_metric):
                 best_thr_metric = thr_metric
+                best_thr_sem = scipy.stats.sem(metrics)
                 best_thr = thr
                 
         # The fitness value corresponds to that of the best thr model
         result = best_thr_metric
+        result_sem = best_thr_sem
         
 
-    return result, best_thr
+    return result, result_sem, best_thr
 
 def Kfold_DT_nothr(dep_variable, X_sets, variables, f):
     '''
@@ -207,9 +224,10 @@ def Kfold_DT_nothr(dep_variable, X_sets, variables, f):
                 
     # Calculate the fitness value as the mean of the k-estimates
     result = np.mean(metrics)
+    result_sem = scipy.stats.sem(metrics)
     best_thr = 0.5 # thr is set to an arbitrary number
         
-    return result, best_thr
+    return result, result_sem, best_thr
 
 
 def get_fitness(dep_variable, variable_names, X_sets, chrom, f, thr_search):
@@ -229,11 +247,11 @@ def get_fitness(dep_variable, variable_names, X_sets, chrom, f, thr_search):
     # Then, the function which evaluates the fitness is called
     
     if (thr_search):
-        fitness, thr = Kfold_DT(dep_variable, X_sets, variables, f)
+        fitness, fitness_sem, thr = Kfold_DT(dep_variable, X_sets, variables, f)
     else:
-        fitness, thr = Kfold_DT_nothr(dep_variable, X_sets, variables, f)
+        fitness, fitness_sem, thr = Kfold_DT_nothr(dep_variable, X_sets, variables, f)
     
-    return fitness, thr
+    return fitness, fitness_sem, thr
     
     
 def random_ind(dep_variable, variable_names, n, f, X_sets, thr_search):
@@ -248,8 +266,8 @@ def random_ind(dep_variable, variable_names, n, f, X_sets, thr_search):
     random.shuffle(chrom)
     
     # Then, the individual is created including its fitness and the thr of the optimal classification
-    fitness, threshold = get_fitness(dep_variable, variable_names, X_sets, chrom, f, thr_search)
-    ind = individual(chrom, fitness, threshold)
+    fitness, fitness_sem, threshold = get_fitness(dep_variable, variable_names, X_sets, chrom, f, thr_search)
+    ind = individual(chrom, fitness, fitness_sem, threshold)
     
     return ind
     
@@ -466,8 +484,8 @@ def GeneticAlgorithm(dep_variable, variable_names, population, db, n, N, max_gen
                 # Third, the next generation is updated, including the previous list plus the new individual
                 if (check==0):
                     # The new individual suffered a cross-over or mutation
-                    fitness, threshold = get_fitness(dep_variable, variable_names, X_sets, child_chrom, f, thr_search)
-                    next_gen = [*next_gen, individual(child_chrom, fitness, threshold)]
+                    fitness, fitness_sem, threshold = get_fitness(dep_variable, variable_names, X_sets, child_chrom, f, thr_search)
+                    next_gen = [*next_gen, individual(child_chrom, fitness, fitness_sem, threshold)]
                 elif (check==1):
                     # The new individual is a copy of parent1 
                     next_gen = [*next_gen, parent1]
@@ -506,9 +524,13 @@ def GeneticAlgorithm(dep_variable, variable_names, population, db, n, N, max_gen
         fitness_list.append(best.fitness)
         mean_fitness_list.append(mean_fitness)
         
-        generation = generation + 1            
+       
         
-    return fitness_list, mean_fitness_list, best_vars, best_thr, best
+        generation = generation + 1            
+    
+    results = result(fitness_list, mean_fitness_list, best_vars, best.fitness, best.fitness_sem, best.threshold)
+    
+    return results
     
 
 
@@ -527,7 +549,7 @@ def opt(db, variable_names, dep_variable, n, N=250, max_gen=10, cr_prob=0.6, fit
     population = init_population(dep_variable, variable_names, n, N, f, X_sets, thr_search)    
     print(f"Initialization of the population completed!")
         
-    fitness_list, mean_fitness_list, best_vars, best_thr, best = GeneticAlgorithm(dep_variable, variable_names, population, db, n, N, max_gen, f, X_sets, cr_prob, thr_search)
+    results = GeneticAlgorithm(dep_variable, variable_names, population, db, n, N, max_gen, f, X_sets, cr_prob, thr_search)
     
-    return [fitness_list, mean_fitness_list, best_vars, best_thr, best]
+    return results
     
