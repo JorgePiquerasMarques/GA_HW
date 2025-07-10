@@ -2,7 +2,7 @@
 
 # Description
 
-Python implementation of the GA_HW algorithm.
+Python implementation of the GA_HW algorithm. Available in [PyPI](https://pypi.org/project/GA-HW/).
 
 The GA_HW is a Genetic Algorithm-based method which can be used for
 variable selection, or more specifically for the abbreviation of a
