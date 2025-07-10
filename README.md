@@ -99,7 +99,6 @@ The algorithm returns a `results` object containing the following atributes:
 - results.fitness_sem: a `float` corresponding to the standard error of the fitness value of the optimal solution. Calculated as the SE of the mean (`scipy.stats.sem`) of the 10 estimates obtained throuh the 10-fold Cross-validation.
 
 # FAQ
-```
 
 **Q: How do I select the right values for the hyper-parameters of the model? Are the default values reliable?**
 
